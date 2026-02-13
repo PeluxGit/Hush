@@ -7,7 +7,7 @@
 ## Category: User Interface
 ## DefaultState: enabled
 ## X-Website: https://github.com/PeluxGit/Hush
-## X-Curse-Project-ID: TBD
+## X-Curse-Project-ID: 1461513
 
 Core.lua
 UI.lua

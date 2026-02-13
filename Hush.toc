@@ -1,0 +1,13 @@
+﻿## Interface: 120001
+## Title: Hush
+## Notes: Replaces select loud sounds with configurable volume and output channel.
+## Author: PeluxGit
+## Version: {current version}
+## SavedVariables: HushDB
+## Category: User Interface
+## DefaultState: enabled
+## X-Website: https://github.com/PeluxGit/Hush
+## X-Curse-Project-ID: TBD
+
+Core.lua
+UI.lua

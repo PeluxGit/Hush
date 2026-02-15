@@ -1,6 +1,29 @@
-﻿local _, Hush = ...
+local _, Hush = ...
 if not Hush then
     return
+end
+
+local SOUND_DESCRIPTIONS = {
+    READY_CHECK = "Used for Ready Check prompts and Dungeon Finder or Raid Finder ready prompts.",
+    PVP_THROUGH_QUEUE = "Used when a Battleground or Arena queue is ready to join.",
+    PVP_ENTER_QUEUE = "Used when joining a Battleground or Arena queue.",
+    LFG_DENIED = "Used when someone declines a Dungeon Finder or Raid Finder prompt.",
+}
+
+local function AttachTooltip(frame, text)
+    if not frame or not text or text == "" then
+        return
+    end
+
+    frame:SetScript("OnEnter", function(self)
+        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+        GameTooltip:SetText(text, 1, 1, 1, true)
+        GameTooltip:Show()
+    end)
+
+    frame:SetScript("OnLeave", function()
+        GameTooltip:Hide()
+    end)
 end
 
 local function CreateEnableCheckbox(panel, label, key)
@@ -88,11 +111,18 @@ local function CreateRow(panel, labelText, key, yOffset)
     label:SetText(labelText)
     label:SetWidth(160)
     label:SetJustifyH("LEFT")
+    AttachTooltip(label, SOUND_DESCRIPTIONS[key])
 
     local checkbox = CreateEnableCheckbox(panel, label, key)
     local volumeDropdown = CreateVolumeDropdown(panel, checkbox, key)
     local channelDropdown = CreateChannelDropdown(panel, volumeDropdown, key)
     CreateTestButton(panel, channelDropdown, key)
+
+    local description = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
+    description:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+    description:SetWidth(520)
+    description:SetJustifyH("LEFT")
+    description:SetText(SOUND_DESCRIPTIONS[key] or "")
 end
 
 local options = CreateFrame("Frame", "HushOptions", InterfaceOptionsFramePanelContainer)
@@ -107,9 +137,9 @@ subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
 subtitle:SetText("Choose the replacement volume and channel for each sound.")
 
 CreateRow(options, "Ready Check", "READY_CHECK", -66)
-CreateRow(options, "PvP Through Queue", "PVP_THROUGH_QUEUE", -114)
-CreateRow(options, "PvP Enter Queue", "PVP_ENTER_QUEUE", -162)
-CreateRow(options, "LFG Denied", "LFG_DENIED", -210)
+CreateRow(options, "PvP Through Queue", "PVP_THROUGH_QUEUE", -130)
+CreateRow(options, "PvP Enter Queue", "PVP_ENTER_QUEUE", -194)
+CreateRow(options, "LFG Denied", "LFG_DENIED", -258)
 
 if Settings and Settings.RegisterCanvasLayoutCategory then
     local category = Settings.RegisterCanvasLayoutCategory(options, options.name)

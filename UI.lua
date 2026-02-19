@@ -10,22 +10,6 @@ local SOUND_DESCRIPTIONS = {
     LFG_DENIED = "Used when someone declines a Dungeon Finder or Raid Finder prompt.",
 }
 
-local function AttachTooltip(frame, text)
-    if not frame or not text or text == "" then
-        return
-    end
-
-    frame:SetScript("OnEnter", function(self)
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        GameTooltip:SetText(text, 1, 1, 1, true)
-        GameTooltip:Show()
-    end)
-
-    frame:SetScript("OnLeave", function()
-        GameTooltip:Hide()
-    end)
-end
-
 local function CreateEnableCheckbox(panel, label, key)
     local checkbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
     checkbox:SetPoint("LEFT", label, "RIGHT", -8, 0)
@@ -105,24 +89,30 @@ local function CreateTestButton(panel, dropdown, key)
     end)
 end
 
-local function CreateRow(panel, labelText, key, yOffset)
+local function CreateRow(panel, labelText, key, yOffset, addSeparator)
     local label = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     label:SetPoint("TOPLEFT", 16, yOffset)
     label:SetText(labelText)
     label:SetWidth(160)
     label:SetJustifyH("LEFT")
-    AttachTooltip(label, SOUND_DESCRIPTIONS[key])
 
     local checkbox = CreateEnableCheckbox(panel, label, key)
     local volumeDropdown = CreateVolumeDropdown(panel, checkbox, key)
     local channelDropdown = CreateChannelDropdown(panel, volumeDropdown, key)
     CreateTestButton(panel, channelDropdown, key)
 
-    local description = panel:CreateFontString(nil, "ARTWORK", "GameFontDisableSmall")
-    description:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -2)
+    local description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    description:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -14)
     description:SetWidth(520)
     description:SetJustifyH("LEFT")
     description:SetText(SOUND_DESCRIPTIONS[key] or "")
+
+    if addSeparator then
+        local separator = panel:CreateTexture(nil, "BORDER")
+        separator:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -34)
+        separator:SetSize(560, 1)
+        separator:SetColorTexture(1, 1, 1, 0.18)
+    end
 end
 
 local options = CreateFrame("Frame", "HushOptions", InterfaceOptionsFramePanelContainer)
@@ -136,10 +126,10 @@ local subtitle = options:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmal
 subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
 subtitle:SetText("Choose the replacement volume and channel for each sound.")
 
-CreateRow(options, "Ready Check", "READY_CHECK", -66)
-CreateRow(options, "PvP Through Queue", "PVP_THROUGH_QUEUE", -130)
-CreateRow(options, "PvP Enter Queue", "PVP_ENTER_QUEUE", -194)
-CreateRow(options, "LFG Denied", "LFG_DENIED", -258)
+CreateRow(options, "Ready Check", "READY_CHECK", -66, true)
+CreateRow(options, "PvP Through Queue", "PVP_THROUGH_QUEUE", -132, true)
+CreateRow(options, "PvP Enter Queue", "PVP_ENTER_QUEUE", -198, true)
+CreateRow(options, "LFG Denied", "LFG_DENIED", -264, false)
 
 if Settings and Settings.RegisterCanvasLayoutCategory then
     local category = Settings.RegisterCanvasLayoutCategory(options, options.name)

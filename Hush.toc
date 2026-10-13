@@ -1,4 +1,4 @@
-﻿## Interface: 120001
+﻿## Interface: 120105
 ## Title: Hush
 ## Notes: Replaces select loud sounds with configurable volume and output channel.
 ## Author: PeluxGit

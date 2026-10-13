@@ -24,7 +24,7 @@ end
 
 local function CreateVolumeDropdown(panel, anchor, key)
     local dropdown = CreateFrame("Frame", nil, panel, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("LEFT", anchor, "RIGHT", -6, -2)
+    dropdown:SetPoint("LEFT", anchor, "RIGHT", 2, 0)
     UIDropDownMenu_SetWidth(dropdown, 70)
 
     UIDropDownMenu_Initialize(dropdown, function(self, level)
@@ -51,7 +51,7 @@ end
 
 local function CreateChannelDropdown(panel, anchor, key)
     local dropdown = CreateFrame("Frame", nil, panel, "UIDropDownMenuTemplate")
-    dropdown:SetPoint("LEFT", anchor, "RIGHT", -6, -2)
+    dropdown:SetPoint("LEFT", anchor, "RIGHT", -6, 0)
     UIDropDownMenu_SetWidth(dropdown, 90)
 
     UIDropDownMenu_Initialize(dropdown, function(self, level)
@@ -79,7 +79,7 @@ end
 local function CreateTestButton(panel, dropdown, key)
     local button = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
     button:SetSize(60, 22)
-    button:SetPoint("LEFT", dropdown, "RIGHT", -10, 3)
+    button:SetPoint("LEFT", dropdown, "RIGHT", -10, 0)
     button:SetText("Test")
     button:SetScript("OnClick", function()
         local sound = Hush.BuildSoundPath(key)
@@ -87,6 +87,7 @@ local function CreateTestButton(panel, dropdown, key)
             PlaySoundFile(sound, Hush.GetChannel(key))
         end
     end)
+    return button
 end
 
 local function CreateRow(panel, labelText, key, yOffset, addSeparator)
@@ -99,7 +100,7 @@ local function CreateRow(panel, labelText, key, yOffset, addSeparator)
     local checkbox = CreateEnableCheckbox(panel, label, key)
     local volumeDropdown = CreateVolumeDropdown(panel, checkbox, key)
     local channelDropdown = CreateChannelDropdown(panel, volumeDropdown, key)
-    CreateTestButton(panel, channelDropdown, key)
+    local testButton = CreateTestButton(panel, channelDropdown, key)
 
     local description = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
     description:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -14)
@@ -113,6 +114,8 @@ local function CreateRow(panel, labelText, key, yOffset, addSeparator)
         separator:SetSize(560, 1)
         separator:SetColorTexture(1, 1, 1, 0.18)
     end
+
+    return checkbox, volumeDropdown, channelDropdown, testButton
 end
 
 local options = CreateFrame("Frame", "HushOptions", InterfaceOptionsFramePanelContainer)
@@ -126,10 +129,26 @@ local subtitle = options:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmal
 subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
 subtitle:SetText("Choose the replacement volume and channel for each sound.")
 
-CreateRow(options, "Ready Check", "READY_CHECK", -66, true)
-CreateRow(options, "PvP Through Queue", "PVP_THROUGH_QUEUE", -132, true)
-CreateRow(options, "PvP Enter Queue", "PVP_ENTER_QUEUE", -198, true)
-CreateRow(options, "LFG Denied", "LFG_DENIED", -264, false)
+local rowAnchorY = -92
+local headerOffsetY = 10
+
+local firstCheckbox, firstVolumeDropdown, firstChannelDropdown = CreateRow(options, "Ready Check", "READY_CHECK", rowAnchorY, true)
+
+local headerEnable = options:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+headerEnable:SetPoint("BOTTOM", firstCheckbox, "TOP", 0, headerOffsetY)
+headerEnable:SetText("Enable")
+
+local headerVolume = options:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+headerVolume:SetPoint("BOTTOM", firstVolumeDropdown, "TOP", 0, headerOffsetY)
+headerVolume:SetText("Volume")
+
+local headerChannel = options:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+headerChannel:SetPoint("BOTTOM", firstChannelDropdown, "TOP", 0, headerOffsetY)
+headerChannel:SetText("Channel")
+
+CreateRow(options, "PvP Through Queue", "PVP_THROUGH_QUEUE", rowAnchorY - 66, true)
+CreateRow(options, "PvP Enter Queue", "PVP_ENTER_QUEUE", rowAnchorY - 132, true)
+CreateRow(options, "LFG Denied", "LFG_DENIED", rowAnchorY - 198, false)
 
 if Settings and Settings.RegisterCanvasLayoutCategory then
     local category = Settings.RegisterCanvasLayoutCategory(options, options.name)

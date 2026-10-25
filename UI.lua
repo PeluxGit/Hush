@@ -3,19 +3,16 @@ if not Hush then
     return
 end
 
-local SOUND_DESCRIPTIONS = {
-    READY_CHECK = "Used for Ready Check prompts and Dungeon Finder or Raid Finder ready prompts.",
-    PVP_THROUGH_QUEUE = "Used when a Battleground or Arena queue is ready to join.",
-    PVP_ENTER_QUEUE = "Used when joining a Battleground or Arena queue.",
-    LFG_DENIED = "Used when someone declines a Dungeon Finder or Raid Finder prompt.",
-}
+local ROW_TOP = -92
+local ROW_HEIGHT = 66
+local HEADER_OFFSET_Y = 10
+local SCROLLBAR_WIDTH = 26
 
 local function CreateEnableCheckbox(panel, label, key)
     local checkbox = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
     checkbox:SetPoint("LEFT", label, "RIGHT", -8, 0)
     checkbox:SetChecked(Hush.IsEnabled(key))
     checkbox:SetScript("OnClick", function(self)
-        Hush.EnsureEnabledTable()
         HushDB.enabled[key] = self:GetChecked() and true or false
         Hush.UpdateMuteForKey(key)
     end)
@@ -35,7 +32,6 @@ local function CreateVolumeDropdown(panel, anchor, key)
             info.value = v
             info.checked = (v == Hush.GetVolume(key))
             info.func = function()
-                Hush.EnsureVolumeTable()
                 HushDB.volume[key] = v
                 UIDropDownMenu_SetSelectedValue(dropdown, v)
                 UIDropDownMenu_SetText(dropdown, tostring(v) .. "%")
@@ -62,7 +58,6 @@ local function CreateChannelDropdown(panel, anchor, key)
             info.value = c
             info.checked = (c == Hush.GetChannel(key))
             info.func = function()
-                Hush.EnsureChannelTable()
                 HushDB.channel[key] = c
                 UIDropDownMenu_SetSelectedValue(dropdown, c)
                 UIDropDownMenu_SetText(dropdown, c)
@@ -90,10 +85,12 @@ local function CreateTestButton(panel, dropdown, key)
     return button
 end
 
-local function CreateRow(panel, labelText, key, yOffset, addSeparator)
+local function CreateRow(panel, sound, yOffset, addSeparator)
+    local key = sound.key
+
     local label = panel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     label:SetPoint("TOPLEFT", 16, yOffset)
-    label:SetText(labelText)
+    label:SetText(sound.label)
     label:SetWidth(160)
     label:SetJustifyH("LEFT")
 
@@ -106,53 +103,81 @@ local function CreateRow(panel, labelText, key, yOffset, addSeparator)
     description:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -14)
     description:SetWidth(520)
     description:SetJustifyH("LEFT")
-    description:SetText(SOUND_DESCRIPTIONS[key] or "")
+    description:SetText(sound.description or "")
 
     if addSeparator then
         local separator = panel:CreateTexture(nil, "BORDER")
         separator:SetPoint("TOPLEFT", label, "BOTTOMLEFT", 0, -34)
-        separator:SetSize(560, 1)
+        separator:SetPoint("RIGHT", panel, "RIGHT", -16, 0)
+        separator:SetHeight(1)
         separator:SetColorTexture(1, 1, 1, 0.18)
     end
 
     return checkbox, volumeDropdown, channelDropdown, testButton
 end
 
-local options = CreateFrame("Frame", "HushOptions", InterfaceOptionsFramePanelContainer)
-options.name = "Hush"
+-- Scrollable area filling the panel; the scroll bar only shows when the content overflows.
+local function CreateScrollContent(panel)
+    local scrollFrame = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
+    scrollFrame:SetPoint("TOPLEFT", 0, -4)
+    scrollFrame:SetPoint("BOTTOMRIGHT", -SCROLLBAR_WIDTH, 4)
+    scrollFrame.scrollBarHideable = true
 
-local title = options:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-title:SetPoint("TOPLEFT", 16, -16)
-title:SetText("Hush")
+    local content = CreateFrame("Frame", nil, scrollFrame)
+    content:SetSize(1, 1)
+    scrollFrame:SetScrollChild(content)
 
-local subtitle = options:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
-subtitle:SetText("Choose the replacement volume and channel for each sound.")
+    scrollFrame:HookScript("OnSizeChanged", function(self, width)
+        content:SetWidth(width)
+    end)
+    scrollFrame:HookScript("OnShow", function(self)
+        ScrollFrame_OnScrollRangeChanged(self)
+    end)
 
-local rowAnchorY = -92
-local headerOffsetY = 10
+    return content
+end
 
-local firstCheckbox, firstVolumeDropdown, firstChannelDropdown = CreateRow(options, "Ready Check", "READY_CHECK", rowAnchorY, true)
+-- Called by Core.lua on ADDON_LOADED, once HushDB holds the saved settings.
+function Hush.BuildOptions()
+    local options = CreateFrame("Frame", "HushOptions", InterfaceOptionsFramePanelContainer)
+    options.name = "Hush"
 
-local headerEnable = options:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-headerEnable:SetPoint("BOTTOM", firstCheckbox, "TOP", 0, headerOffsetY)
-headerEnable:SetText("Enable")
+    local content = CreateScrollContent(options)
+    content:SetHeight(-ROW_TOP + #Hush.SOUNDS * ROW_HEIGHT)
 
-local headerVolume = options:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-headerVolume:SetPoint("BOTTOM", firstVolumeDropdown, "TOP", 0, headerOffsetY)
-headerVolume:SetText("Volume")
+    local title = content:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -16)
+    title:SetText("Hush")
 
-local headerChannel = options:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-headerChannel:SetPoint("BOTTOM", firstChannelDropdown, "TOP", 0, headerOffsetY)
-headerChannel:SetText("Channel")
+    local subtitle = content:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
+    subtitle:SetText("Choose the replacement volume and channel for each sound.")
 
-CreateRow(options, "PvP Through Queue", "PVP_THROUGH_QUEUE", rowAnchorY - 66, true)
-CreateRow(options, "PvP Enter Queue", "PVP_ENTER_QUEUE", rowAnchorY - 132, true)
-CreateRow(options, "LFG Denied", "LFG_DENIED", rowAnchorY - 198, false)
+    local firstCheckbox, firstVolumeDropdown, firstChannelDropdown
+    for i, sound in ipairs(Hush.SOUNDS) do
+        local yOffset = ROW_TOP - (i - 1) * ROW_HEIGHT
+        local checkbox, volumeDropdown, channelDropdown = CreateRow(content, sound, yOffset, i < #Hush.SOUNDS)
+        if i == 1 then
+            firstCheckbox, firstVolumeDropdown, firstChannelDropdown = checkbox, volumeDropdown, channelDropdown
+        end
+    end
 
-if Settings and Settings.RegisterCanvasLayoutCategory then
-    local category = Settings.RegisterCanvasLayoutCategory(options, options.name)
-    Settings.RegisterAddOnCategory(category)
-else
-    InterfaceOptions_AddCategory(options)
+    local headerEnable = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    headerEnable:SetPoint("BOTTOM", firstCheckbox, "TOP", 0, HEADER_OFFSET_Y)
+    headerEnable:SetText("Enable")
+
+    local headerVolume = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    headerVolume:SetPoint("BOTTOM", firstVolumeDropdown, "TOP", 0, HEADER_OFFSET_Y)
+    headerVolume:SetText("Volume")
+
+    local headerChannel = content:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    headerChannel:SetPoint("BOTTOM", firstChannelDropdown, "TOP", 0, HEADER_OFFSET_Y)
+    headerChannel:SetText("Channel")
+
+    if Settings and Settings.RegisterCanvasLayoutCategory then
+        local category = Settings.RegisterCanvasLayoutCategory(options, options.name)
+        Settings.RegisterAddOnCategory(category)
+    else
+        InterfaceOptions_AddCategory(options)
+    end
 end
